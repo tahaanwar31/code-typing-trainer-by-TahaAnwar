@@ -1,0 +1,859 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FAST Code Typing — Trainer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0b1220;--panel:#071428;--muted:#97a6bf;--accent:#7c3aed;--glass:rgba(255,255,255,0.04);--ok:#16a34a;--bad:#ef4444}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial; background:linear-gradient(180deg,#051025 0%, #071329 100%); color:#e6eef8; display:flex; align-items:flex-start; justify-content:center; padding:28px}
+    .container{width:100%; max-width:1100px}
+    header{display:flex; align-items:center; gap:18px; margin-bottom:18px}
+    h1{margin:0; font-size:20px; background: linear-gradient(90deg, var(--accent), #4f46e5); padding: 4px 8px; border-radius: 6px; text-shadow: 0 0 5px rgba(124,58,237,0.5); text-align: center;}
+    .sub{color:var(--muted); font-size:13px}
+
+    .grid{display:grid; grid-template-columns: 1fr 360px; gap:18px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:16px; border-radius:12px; box-shadow:0 10px 30px rgba(2,6,23,.6); border:1px solid var(--glass)}
+
+    /* Snippet area */
+    .snippet-header{display:flex; align-items:center; gap:10px}
+    .title{font-weight:600}
+    .meta{color:var(--muted); font-size:13px}
+
+    #snippetWrap{height:300px; overflow:auto; margin-top:12px; border-radius:10px; padding:14px; background:#021028; border:1px solid rgba(255,255,255,.02)}
+    pre{white-space:pre; word-wrap:break-word; font-family:'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, 'Courier New', monospace; font-size:14px; line-height:1.45; margin:0}
+    .char{display:inline; padding:0 0.5px; min-width:0.5em}
+    .correct{background:rgba(22,163,74,.12); color:#9ff1b5}
+    .incorrect{background:rgba(239,68,68,.12); color:#ffb6b6}
+    .next{color: yellow; background: rgba(255,255,0,0.2); border-radius:3px}
+    .current-word {background:rgba(22,163,74,.2)}
+
+    .controls{display:flex; gap:8px; align-items:center; margin-top:12px}
+    button{background:transparent; border:1px solid rgba(255,255,255,.06); color:inherit; padding:8px 12px; border-radius:10px; cursor:pointer}
+    button.primary{background:linear-gradient(90deg,var(--accent),#4f46e5); border:none}
+    .statRow{display:flex; gap:10px; margin-top:10px}
+    .stat{background:rgba(255,255,255,.02); padding:10px 12px; border-radius:10px; min-width:90px; text-align:center}
+    .small{font-size:13px}
+
+    /* right column */
+    .snippet-list{display:flex; flex-direction:column; gap:8px; max-height:260px; overflow:auto}
+    .snipBtn{background:transparent; border:1px solid rgba(255,255,255,.03); padding:10px; border-radius:10px; text-align:left; cursor:pointer}
+    .snipTitle{font-weight:600}
+    .snipLang{color:var(--muted); font-size:12px}
+
+    textarea,input,select{width:100%; padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,.04); background:transparent; color:inherit}
+    footer .muted{color:var(--muted); font-size:13px}
+
+    .controls .spacer{flex:1}
+
+    /* responsive */
+    @media (max-width:980px){
+      .grid{grid-template-columns:1fr;}
+    }
+
+    .built-by {color: #ffffff; font-size: 16px; font-weight: bold; text-shadow: 0 0 5px rgba(124,58,237,0.5); background: linear-gradient(90deg, var(--accent), #4f46e5); padding: 4px 8px; border-radius: 6px; text-align: center; width: fit-content; margin: 0 auto;}
+
+    .fancy-heading {background: linear-gradient(90deg, var(--accent), #4f46e5); padding: 4px 8px; border-radius: 6px; text-shadow: 0 0 5px rgba(124,58,237,0.5); display: inline-block; font-weight: bold; position: relative;}
+    .fancy-heading::before {content: '✨'; position: absolute; left: -15px; top: 50%; transform: translateY(-50%);}
+    .fancy-heading::after {content: '✨'; position: absolute; right: -15px; top: 50%; transform: translateY(-50%);}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>FAST Code Typing — Trainer</h1>
+        <div class="sub">Practice typing real code used in DS &amp; OOP exercises. Click any snippet to load it — tests are 60s by default. Level 1: Python (unlock C++ at 57+ WPM).</div>
+      </div>
+      <div style="margin-left:auto; text-align:right; display: flex; justify-content: center;">
+        <div class="built-by">Built by Taha Anwer</div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div>
+        <div class="card">
+          <div class="snippet-header">
+            <div>
+              <div class="title" id="codeTitle">Click a snippet on the right to load</div>
+              <div class="meta" id="codeMeta">Language: — · Length: —</div>
+            </div>
+            <div style="margin-left:auto" class="meta">60s tests · Shuffle snippets · Current Level: <span id="levelIndicator">1 (Python)</span></div>
+          </div>
+
+          <div id="snippetWrap"><pre id="snippet"><code></code></pre></div>
+
+          <div style="margin-top:12px">
+            <label class="small fancy-heading">Type below (focus will be given when you press Start). Press Enter for newlines in code.</label>
+            <textarea id="hiddenInput" rows="8" placeholder="Click Start then type the shown code..." style="margin-top:8px"></textarea>
+          </div>
+
+          <div class="controls">
+            <button id="startBtn" class="primary">Start 60s Test</button>
+            <button id="shuffleBtn">Shuffle Snippets</button>
+            <button id="resetBtn">Reset</button>
+            <div class="spacer"></div>
+            <label class="small" style="margin:0">Time</label>
+            <input id="timeInput" type="number" value="60" min="10" max="300" style="width:84px" />
+          </div>
+
+          <div class="statRow">
+            <div class="stat"><div class="small">WPM</div><div id="wpm">0</div></div>
+            <div class="stat"><div class="small">Accuracy</div><div id="acc">100%</div></div>
+            <div class="stat"><div class="small">Errors</div><div id="errs">0</div></div>
+            <div class="stat"><div class="small">Typed</div><div id="typed">0</div></div>
+            <div class="stat"><div class="small">Time</div><div id="time">60s</div></div>
+          </div>
+
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <label class="small fancy-heading">Custom snippets (paste multiple snippets separated by <code>===</code>)</label>
+          <textarea id="customSnips" rows="6" placeholder="Paste your snippets, separate by ==="></textarea>
+          <div style="display:flex; gap:8px; margin-top:8px">
+            <button id="saveSnips">Save snippets</button>
+            <button id="loadDefaults">Load provided snippets</button>
+            <button id="clearStorage">Clear saved data</button>
+          </div>
+          <div style="margin-top:8px" class="muted">Snippets and scores are stored locally in the browser. You can export later if needed.</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center">
+            <div><strong class="fancy-heading">Snippets library</strong><div class="meta">Click to load — snippets shuffled by default</div></div>
+            <div><button id="addProvided">Add provided DS/OOP snippets</button></div>
+          </div>
+          <div class="snippet-list" id="snipList"></div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div style="display:flex; justify-content:space-between; align-items:center"><strong class="fancy-heading">Top scores</strong><div class="meta">Local only</div></div>
+          <div id="scores" style="max-height:220px; overflow:auto; margin-top:10px"></div>
+        </div>
+
+        <footer class="card" style="margin-top:12px">
+          <div class="muted">this website was designed to solely help alevels cs students improve their typing speed and help them score high in paper 4</div>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // PROFESSIONAL single-file trainer (fixed display, auto-scroll, moved typing box)
+    const pythonSnippets = [
+      {id:'stack', title:'Stack (array implementation) — Python (CAIE 9618)', lang:'Python', code:`global StackData
+global StackPointer
+StackData = [0] * 10
+StackPointer = 0
+
+def PrintStack():
+    global StackData
+    for x in range(len(StackData)):
+        print(StackData[x])
+    print("StackPointer: " + str(StackPointer))
+
+def Push(integerP):
+    global StackData
+    global StackPointer
+    if StackPointer > 9:
+        return False
+    else:
+        StackData[StackPointer] = integerP
+        StackPointer = StackPointer + 1
+        return True
+
+for x in range(11):
+    userinput = int(input("Please enter the numbers you want to add to Stack: "))
+    temp = Push(userinput)
+    if temp == True:
+        print("Successfully added")
+    else:
+        print("Stack is full")
+
+PrintStack()
+
+def Pop():
+    global StackData
+    global StackPointer
+    if StackPointer == 0:
+        return -1
+    else:
+        StackPointer = StackPointer - 1
+        temp = StackData[StackPointer]
+        return temp
+`},
+
+      {id:'linearqueue', title:'Linear Queue (array) — Python (CAIE 9618)', lang:'Python', code:`global QueueArray
+global HeadPointer
+global TailPointer
+QueueArray = [0] * 10
+HeadPointer = -1
+TailPointer = 0
+
+def Enqueue(Data):
+    global QueueArray
+    global HeadPointer
+    global TailPointer
+    if TailPointer > 9:
+        print("Queue is full")
+    else:
+        QueueArray[TailPointer] = Data
+        TailPointer = TailPointer + 1
+        if HeadPointer == -1:
+            HeadPointer = 0
+
+def Dequeue():
+    global QueueArray
+    global HeadPointer
+    global TailPointer
+    if HeadPointer == -1:
+        print("Queue is empty")
+    else:
+        item = QueueArray[HeadPointer]
+        HeadPointer = HeadPointer + 1
+        print(item)
+    if HeadPointer == TailPointer:
+        HeadPointer = -1
+        TailPointer = 0
+`},
+
+      {id:'circularqueue', title:'Circular Queue — Python (CAIE 9618)', lang:'Python', code:`global QueueArray
+global HeadPointer
+global TailPointer
+global NumberOfItems
+QueueArray = [0] * 10
+HeadPointer = -1
+TailPointer = 0
+NumberOfItems = 0
+
+def Enqueue(Data):
+    global QueueArray
+    global HeadPointer
+    global TailPointer
+    global NumberOfItems
+    if NumberOfItems >= 9:
+        print("Queue is full")
+    else:
+        QueueArray[TailPointer] = Data
+        NumberOfItems = NumberOfItems + 1
+        if TailPointer >= 9:
+            TailPointer = 0
+        else:
+            TailPointer = TailPointer + 1
+
+def Dequeue():
+    global QueueArray
+    global HeadPointer
+    global TailPointer
+    global NumberOfItems
+    if NumberOfItems == 0:
+        print("Queue is empty")
+    else:
+        item = QueueArray[HeadPointer]
+        HeadPointer = HeadPointer + 1
+        NumberOfItems = NumberOfItems - 1
+        if HeadPointer >= 9:
+            HeadPointer = 0
+`},
+
+      {id:'orderedlinked', title:'Ordered Linked List (OOP) — Python (CAIE 9618)', lang:'Python', code:`class node:
+    def __init__(self, dataP, nextNodeP):
+        self.data = dataP
+        self.nextNode = nextNodeP
+
+linkedList = [""] * 10
+linkedList[0] = node(1, 1)
+linkedList[1] = node(5, 4)
+linkedList[2] = node(6, 7)
+linkedList[3] = node(7, -1)
+linkedList[4] = node(2, 2)
+linkedList[5] = node(0, 6)
+linkedList[6] = node(0, 8)
+linkedList[7] = node(56, 3)
+linkedList[8] = node(0, 9)
+linkedList[9] = node(0, -1)
+startPointer = 0
+emptyList = 5
+
+def AddNode(currentPointer):
+    global linkedList
+    global emptyList
+    DatatoAdd = int(input("Please input the data you want to add: "))
+    if emptyList < 0 or emptyList > 9:
+        print("No space")
+    else:
+        freeList = emptyList
+        emptyList = linkedList[emptyList].nextNode
+        newNode = node(DatatoAdd, -1)
+        linkedList[freeList] = newNode
+        previousPointer = currentPointer
+        while currentPointer != -1:
+            previousPointer = currentPointer
+            currentPointer = linkedList[currentPointer].nextNode
+        linkedList[previousPointer].nextNode = freeList
+        print("Added")
+
+def OrderedAddNode(currentPointer):
+    global linkedList
+    global emptyList
+    global startPointer
+    DatatoAdd = int(input("Please input the data you want to add: "))
+    if emptyList < 0 or emptyList > 9:
+        print("No space")
+    else:
+        freeList = emptyList
+        emptyList = linkedList[emptyList].nextNode
+        newNode = node(DatatoAdd, -1)
+        linkedList[freeList] = newNode
+        previousPointer = currentPointer
+        while currentPointer != -1 and DatatoAdd < linkedList[currentPointer].data:
+            previousPointer = currentPointer
+            currentPointer = linkedList[currentPointer].nextNode
+        if currentPointer == startPointer:
+            linkedList[freeList].nextNode = startPointer
+            startPointer = freeList
+        else:
+            linkedList[freeList].nextNode = linkedList[previousPointer].nextNode
+            linkedList[previousPointer].nextNode = freeList
+
+def deleteNode():
+    global linkedList
+    global startPointer
+    global emptyList
+    datatoremove = int(input("Please enter the data you want to remove: "))
+    currentPointer = startPointer
+    previousPointer = currentPointer
+    while currentPointer != -1 and linkedList[currentPointer].data != datatoremove:
+        previousPointer = currentPointer
+        currentPointer = linkedList[currentPointer].nextNode
+    if currentPointer == -1:
+        print("No such value found")
+    else:
+        if currentPointer == startPointer:
+            startPointer = linkedList[currentPointer].nextNode
+        else:
+            linkedList[previousPointer].nextNode = linkedList[currentPointer].nextNode
+        linkedList[currentPointer].data = 0
+        linkedList[currentPointer].nextNode = emptyList
+        emptyList = currentPointer
+        print("Done")
+
+def findItem(currentPointer, searchValue):
+    while currentPointer != -1:
+        if linkedList[currentPointer].data == searchValue:
+            return currentPointer
+        else:
+            currentPointer = linkedList[currentPointer].nextNode
+    return currentPointer
+`},
+
+      {id:'unordered2d', title:'Unordered Linked List (2D array) — Python (CAIE 9618)', lang:'Python', code:`linkedList = [[0] * 2 for x in range(10)]
+linkedList[0] = [1, 1]
+linkedList[1] = [5, 4]
+linkedList[2] = [6, 7]
+linkedList[3] = [7, -1]
+linkedList[4] = [2, 2]
+linkedList[5] = [0, 6]
+linkedList[6] = [0, 8]
+linkedList[7] = [56, 3]
+linkedList[8] = [0, 9]
+linkedList[9] = [0, -1]
+startPointer = 0
+emptyList = 5
+
+def addNode(currentPointer):
+    global linkedList
+    global startPointer
+    global emptyList
+    datatoadd = int(input("Please enter the data you want to add: "))
+    if emptyList < 0 or emptyList > 9:
+        return False
+    else:
+        freeList = emptyList
+        emptyList = linkedList[emptyList][1]
+        newNode = [datatoadd, -1]
+        linkedList[freeList] = newNode
+        previousPointer = currentPointer
+        while currentPointer != -1:
+            previousPointer = currentPointer
+            currentPointer = linkedList[currentPointer][1]
+        linkedList[previousPointer][1] = freeList
+        return True
+
+def deleteNode():
+    global linkedList
+    global startPointer
+    global emptyList
+    currentPointer = startPointer
+    datatodelete = int(input("Please enter the data you want to delete: "))
+    previousPointer = currentPointer
+    while currentPointer != -1 and linkedList[currentPointer][0] != datatodelete:
+        previousPointer = currentPointer
+        currentPointer = linkedList[currentPointer][1]
+    linkedList[previousPointer][1] = linkedList[currentPointer][1]
+    linkedList[currentPointer][1] = emptyList
+    emptyList = currentPointer
+
+def outputNodes(startPointer):
+    global linkedList
+    currentPointer = startPointer
+    while currentPointer != -1:
+        print(linkedList[currentPointer][0])
+        currentPointer = linkedList[currentPointer][1]
+
+def findItem(startPointer, valueSearch):
+    currentPointer = startPointer
+    global linkedList
+    while currentPointer != -1:
+        if linkedList[currentPointer][0] == valueSearch:
+            return currentPointer
+        else:
+            currentPointer = linkedList[currentPointer][1]
+    return currentPointer
+`},
+
+      {id:'bintreeoop', title:'Binary Tree (OOP array) — Python (CAIE 9618)', lang:'Python', code:`class Tree:
+    def __init__(self, LeftPointerP, DataP, RightPointerP):
+        self.LeftPointer = LeftPointerP
+        self.Data = DataP
+        self.RightPointer = RightPointerP
+
+ArrayNodes = [0] * 20
+RootPointer = -1
+FreeNode = 0
+
+def AddNode():
+    global ArrayNodes
+    global RootPointer
+    global FreeNode
+    NodeData = int(input("Please enter the data you want to add: "))
+    if FreeNode > 19:
+        print("Binary Tree is full")
+    else:
+        ArrayNodes[FreeNode] = Tree(-1, NodeData, -1)
+        if RootPointer == -1:
+            RootPointer = 0
+        else:
+            placed = False
+            CurrentPointer = RootPointer
+            while placed == False:
+                if NodeData < ArrayNodes[CurrentPointer].Data:
+                    if ArrayNodes[CurrentPointer].LeftPointer == -1:
+                        ArrayNodes[CurrentPointer].LeftPointer = FreeNode
+                        placed = True
+                    else:
+                        CurrentPointer = ArrayNodes[CurrentPointer].LeftPointer
+                else:
+                    if ArrayNodes[CurrentPointer].RightPointer == -1:
+                        ArrayNodes[CurrentPointer].RightPointer = FreeNode
+                        placed = True
+                    else:
+                        CurrentPointer = ArrayNodes[CurrentPointer].RightPointer
+        FreeNode = FreeNode + 1
+
+def FindItem(SearchItem):
+    CurrentPointer = RootPointer
+    while CurrentPointer != -1 and ArrayNodes[CurrentPointer].Data != SearchItem:
+        if SearchItem < ArrayNodes[CurrentPointer].Data:
+            CurrentPointer = ArrayNodes[CurrentPointer].LeftPointer
+        else:
+            CurrentPointer = ArrayNodes[CurrentPointer].RightPointer
+    print(CurrentPointer)
+`},
+
+      {id:'bintree2d', title:'Binary Tree (2D array) — Python (CAIE 9618)', lang:'Python', code:`global ArrayNodes
+global RootPointer
+global FreeNode
+ArrayNodes = [[0] * 3 for x in range(20)]
+RootPointer = -1
+FreeNode = 0
+
+def AddNode():
+    global ArrayNodes
+    global RootPointer
+    global FreeNode
+    NodeData = int(input("Please enter the data you want to add: "))
+    if FreeNode > 19:
+        print("Binary Tree is full")
+    else:
+        ArrayNodes[FreeNode][0] = -1
+        ArrayNodes[FreeNode][1] = NodeData
+        ArrayNodes[FreeNode][2] = -1
+        if RootPointer == -1:
+            RootPointer = 0
+        else:
+            placed = False
+            CurrentPointer = RootPointer
+            while placed == False:
+                if NodeData < ArrayNodes[CurrentPointer][1]:
+                    if ArrayNodes[CurrentPointer][0] == -1:
+                        ArrayNodes[CurrentPointer][0] = FreeNode
+                        placed = True
+                    else:
+                        CurrentPointer = ArrayNodes[CurrentPointer][0]
+                else:
+                    if ArrayNodes[CurrentPointer][2] == -1:
+                        ArrayNodes[CurrentPointer][2] = FreeNode
+                        placed = True
+                    else:
+                        CurrentPointer = ArrayNodes[CurrentPointer][2]
+        FreeNode = FreeNode + 1
+
+def FindItem(SearchItem):
+    CurrentPointer = RootPointer
+    while CurrentPointer != -1 and ArrayNodes[CurrentPointer][1] != SearchItem:
+        if SearchItem < ArrayNodes[CurrentPointer][1]:
+            CurrentPointer = ArrayNodes[CurrentPointer][0]
+        else:
+            CurrentPointer = ArrayNodes[CurrentPointer][2]
+    print(CurrentPointer)
+`}
+    ];
+
+    const cppSnippets = [
+      {id:'stack_cpp', title:'Stack (array implementation) — C++', lang:'C++', code:`#include <iostream>
+#define MAX 10
+using namespace std;
+
+int StackData[MAX];
+int StackPointer = 0;
+
+void PrintStack() {
+    for (int x = 0; x < MAX; x++) {
+        cout << StackData[x] << endl;
+    }
+    cout << "StackPointer: " << StackPointer << endl;
+}
+
+bool Push(int integerP) {
+    if (StackPointer > MAX-1) {
+        return false;
+    } else {
+        StackData[StackPointer] = integerP;
+        StackPointer++;
+        return true;
+    }
+}
+
+int main() {
+    for (int x = 0; x < 11; x++) {
+        int userinput;
+        cout << "Please enter the numbers you want to add to Stack: ";
+        cin >> userinput;
+        bool temp = Push(userinput);
+        if (temp) {
+            cout << "Successfully added" << endl;
+        } else {
+            cout << "Stack is full" << endl;
+        }
+    }
+    PrintStack();
+    return 0;
+}
+
+int Pop() {
+    if (StackPointer == 0) {
+        return -1;
+    } else {
+        StackPointer--;
+        int temp = StackData[StackPointer];
+        return temp;
+    }
+}
+`},
+
+      {id:'linearqueue_cpp', title:'Linear Queue (array) — C++', lang:'C++', code:`#include <iostream>
+#define MAX 10
+using namespace std;
+
+int QueueArray[MAX];
+int HeadPointer = -1;
+int TailPointer = 0;
+
+void Enqueue(int Data) {
+    if (TailPointer > MAX-1) {
+        cout << "Queue is full" << endl;
+    } else {
+        QueueArray[TailPointer] = Data;
+        TailPointer++;
+        if (HeadPointer == -1) {
+            HeadPointer = 0;
+        }
+    }
+}
+
+void Dequeue() {
+    if (HeadPointer == -1) {
+        cout << "Queue is empty" << endl;
+    } else {
+        int item = QueueArray[HeadPointer];
+        HeadPointer++;
+        cout << item << endl;
+    }
+    if (HeadPointer == TailPointer) {
+        HeadPointer = -1;
+        TailPointer = 0;
+    }
+}
+`},
+
+      {id:'circularqueue_cpp', title:'Circular Queue — C++', lang:'C++', code:`#include <iostream>
+#define MAX 10
+using namespace std;
+
+int QueueArray[MAX];
+int HeadPointer = -1;
+int TailPointer = 0;
+int NumberOfItems = 0;
+
+void Enqueue(int Data) {
+    if (NumberOfItems >= MAX-1) {
+        cout << "Queue is full" << endl;
+    } else {
+        QueueArray[TailPointer] = Data;
+        NumberOfItems++;
+        if (TailPointer >= MAX-1) {
+            TailPointer = 0;
+        } else {
+            TailPointer++;
+        }
+    }
+}
+
+void Dequeue() {
+    if (NumberOfItems == 0) {
+        cout << "Queue is empty" << endl;
+    } else {
+        int item = QueueArray[HeadPointer];
+        HeadPointer++;
+        NumberOfItems--;
+        if (HeadPointer >= MAX-1) {
+            HeadPointer = 0;
+        }
+        cout << item << endl;
+    }
+}
+`},
+
+      {id:'linkedlist_cpp', title:'Ordered Linked List — C++', lang:'C++', code:`#include <iostream>
+using namespace std;
+
+struct Node {
+    int data;
+    Node* next;
+};
+
+Node* head = NULL;
+
+void insert(int new_data) {
+    Node* new_node = new Node();
+    new_node->data = new_data;
+    new_node->next = head;
+    head = new_node;
+}
+
+void orderedInsert(int new_data) {
+    Node* new_node = new Node();
+    new_node->data = new_data;
+    Node* current;
+    if (head == NULL || head->data >= new_node->data) {
+        new_node->next = head;
+        head = new_node;
+    } else {
+        current = head;
+        while (current->next != NULL && current->next->data < new_node->data) {
+            current = current->next;
+        }
+        new_node->next = current->next;
+        current->next = new_node;
+    }
+}
+
+void deleteNode(int key) {
+    Node* temp = head;
+    Node* prev = NULL;
+    if (temp != NULL && temp->data == key) {
+        head = temp->next;
+        delete temp;
+        return;
+    }
+    while (temp != NULL && temp->data != key) {
+        prev = temp;
+        temp = temp->next;
+    }
+    if (temp == NULL) return;
+    prev->next = temp->next;
+    delete temp;
+}
+
+Node* search(int key) {
+    Node* current = head;
+    while (current != NULL) {
+        if (current->data == key) {
+            return current;
+        }
+        current = current->next;
+    }
+    return NULL;
+}
+`},
+
+      {id:'bintree_cpp', title:'Binary Tree — C++', lang:'C++', code:`#include <iostream>
+using namespace std;
+
+struct Node {
+    int data;
+    Node* left;
+    Node* right;
+    Node(int val) {
+        data = val;
+        left = right = NULL;
+    }
+};
+
+Node* insert(Node* node, int data) {
+    if (node == NULL) {
+        return new Node(data);
+    }
+    if (data < node->data) {
+        node->left = insert(node->left, data);
+    } else if (data > node->data) {
+        node->right = insert(node->right, data);
+    }
+    return node;
+}
+
+Node* search(Node* root, int key) {
+    if (root == NULL || root->data == key) {
+        return root;
+    }
+    if (root->data < key) {
+        return search(root->right, key);
+    }
+    return search(root->left, key);
+}
+`}
+    ];
+
+    // Elements
+    const snippetEl = document.querySelector('#snippet code');
+    const snipList = document.getElementById('snipList');
+    const startBtn = document.getElementById('startBtn');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const hiddenInput = document.getElementById('hiddenInput');
+    const wpmEl = document.getElementById('wpm');
+    const accEl = document.getElementById('acc');
+    const errsEl = document.getElementById('errs');
+    const typedEl = document.getElementById('typed');
+    const timeEl = document.getElementById('time');
+    const codeTitle = document.getElementById('codeTitle');
+    const codeMeta = document.getElementById('codeMeta');
+    const timeInput = document.getElementById('timeInput');
+    const scoresEl = document.getElementById('scores');
+    const levelIndicator = document.getElementById('levelIndicator');
+
+    let state = {
+      level: parseInt(localStorage.getItem('ctt_level') || '1'),
+      snippets: [],
+      current: null,
+      targetChars: [],
+      running: false,
+      timer: null,
+      remaining: parseInt(timeInput.value, 10),
+      startedAt: null,
+      typed: 0,
+      errors: 0,
+      scores: JSON.parse(localStorage.getItem('ctt_scores') || '[]')
+    };
+
+    function loadSnippetsForLevel() {
+      if (state.level === 1) {
+        state.snippets = JSON.parse(localStorage.getItem('ctt_snippets_python') || 'null') || pythonSnippets;
+        levelIndicator.textContent = '1 (Python)';
+      } else {
+        state.snippets = JSON.parse(localStorage.getItem('ctt_snippets_cpp') || 'null') || cppSnippets;
+        levelIndicator.textContent = '2 (C++)';
+      }
+      state.snippets = shuffle(state.snippets);
+      renderSnipList();
+    }
+
+    // UTILITIES
+    function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]] } return a }
+    function renderSnipList() { snipList.innerHTML = ''; state.snippets.forEach(s => { const btn = document.createElement('button'); btn.className = 'snipBtn'; btn.innerHTML = `<div class="snipTitle">${s.title}</div><div class="snipLang">${s.lang} · ${Math.min(500, s.code.length)} chars</div>`; btn.onclick = () => { loadSnippet(s); }; snipList.appendChild(btn); }); }
+
+    function loadSnippet(s) { state.current = s; codeTitle.textContent = s.title; codeMeta.textContent = `Language: ${s.lang} · Length: ${s.code.length} chars`; renderSnippet(s.code); }
+
+    function renderSnippet(text) {
+      const chars = Array.from(text);
+      state.targetChars = chars;
+      snippetEl.innerHTML = '';
+      chars.forEach((ch, i) => {
+        const span = document.createElement('span');
+        span.className = 'char';
+        span.dataset.i = i;
+        span.textContent = ch;
+        snippetEl.appendChild(span);
+      });
+      highlightAt(0);
+    }
+
+    function highlightAt(i) { const spans = snippetEl.querySelectorAll('.char'); spans.forEach(s => s.classList.remove('next')); if (spans[i]) spans[i].classList.add('next'); }
+
+    function updateStats() { const matched = state.matched || 0; const elapsed = Math.max(1, (state.startedAt ? (Date.now() - state.startedAt) / 1000 : 1)); const wpm = Math.round((matched / 5) / (elapsed / 60)); const acc = state.typed === 0 ? 100 : Math.round((matched / state.typed) * 100); wpmEl.textContent = wpm; accEl.textContent = acc + '%'; errsEl.textContent = state.errors; typedEl.textContent = state.typed; timeEl.textContent = state.remaining + 's'; return { wpm, acc }; }
+
+    function endTest() { clearInterval(state.timer); state.running = false; startBtn.textContent = 'Start 60s Test'; hiddenInput.disabled = true; const res = updateStats(); state.scores.push({ date: new Date().toISOString(), wpm: res.wpm, acc: res.acc, snippet: state.current ? state.current.id : '-' }); localStorage.setItem('ctt_scores', JSON.stringify(state.scores)); renderScores(); alert(`Test finished — ${res.wpm} WPM • ${res.acc}% accuracy`); checkLevelUp(res.wpm); }
+
+    function checkLevelUp(wpm) {
+      if (state.level === 1 && wpm >= 57) {
+        state.level = 2;
+        localStorage.setItem('ctt_level', '2');
+        alert('Congrats! Unlocked Level 2: C++ snippets (with semicolons and harder syntax).');
+        loadSnippetsForLevel();
+      }
+    }
+
+    function startTest() { if (!state.current) { alert('Load a snippet first by clicking one on the right.'); return; } state.running = true; state.startedAt = Date.now(); state.remaining = parseInt(timeInput.value, 10); state.typed=0; state.errors=0; state.matched=0; hiddenInput.value=''; hiddenInput.disabled=false; hiddenInput.focus(); startBtn.textContent='Running…'; updateStats(); state.timer=setInterval(()=>{ state.remaining--; updateStats(); if(state.remaining<=0) endTest(); },1000); }
+
+    hiddenInput.addEventListener('input', (e) => { if (!state.running) return; const val = hiddenInput.value; state.typed = val.length; let errs = 0; let matched = 0; let targetPtr = 0; let typedPtr = 0; const spans = snippetEl.querySelectorAll('.char'); spans.forEach(s => s.classList.remove('correct', 'incorrect', 'current-word', 'next')); while (typedPtr < val.length) { if (targetPtr < state.targetChars.length && val[typedPtr] === state.targetChars[targetPtr]) { spans[targetPtr].classList.add('correct'); matched++; targetPtr++; typedPtr++; } else if (typedPtr + 1 < val.length && targetPtr < state.targetChars.length && val[typedPtr + 1] === state.targetChars[targetPtr]) { errs++; typedPtr++; } else if (targetPtr + 1 < state.targetChars.length && val[typedPtr] === state.targetChars[targetPtr + 1]) { spans[targetPtr].classList.add('incorrect'); targetPtr++; errs++; spans[targetPtr].classList.add('correct'); matched++; targetPtr++; typedPtr++; } else { if (targetPtr < state.targetChars.length) { spans[targetPtr].classList.add('incorrect'); targetPtr++; } errs++; typedPtr++; } } state.errors = errs; state.matched = matched; highlightAt(targetPtr); const nextIndex = targetPtr; if (nextIndex < state.targetChars.length) { let start = nextIndex; while (start > 0 && state.targetChars[start - 1] !== ' ' && state.targetChars[start - 1] !== '\n') { start--; } let end = nextIndex; while (end < state.targetChars.length && state.targetChars[end] !== ' ' && state.targetChars[end] !== '\n') { end++; } for (let j = start; j < end; j++) { if (j >= targetPtr) spans[j].classList.add('current-word'); } } updateStats(); const next = snippetEl.querySelector('.next'); if (next) { const wrap = document.getElementById('snippetWrap'); const rect = next.getBoundingClientRect(); const wrapRect = wrap.getBoundingClientRect(); if (rect.top < wrapRect.top || rect.bottom > wrapRect.bottom) { next.scrollIntoView({block: 'nearest'}); } } });
+
+    // Buttons
+    startBtn.addEventListener('click', () => { if (!state.running) { const random = state.snippets[Math.floor(Math.random() * state.snippets.length)]; loadSnippet(random); startTest(); } else endTest(); });
+    resetBtn.addEventListener('click', () => { clearInterval(state.timer); state.running = false; startBtn.textContent = 'Start 60s Test'; hiddenInput.disabled = true; hiddenInput.value = ''; state.typed = 0; state.errors = 0; state.matched = 0; updateStats(); if (state.current) renderSnippet(state.current.code); });
+    shuffleBtn.addEventListener('click', () => { state.snippets = shuffle(state.snippets); renderSnipList(); alert('Snippets shuffled'); });
+
+    // Custom snippets save/load
+    document.getElementById('saveSnips').addEventListener('click', () => { const raw = document.getElementById('customSnips').value.trim(); if (!raw) return alert('Paste snippets separated by ==='); const parts = raw.split(/===+/).map(s => s.trim()).filter(Boolean).map((p, i) => ({ id: 'custom' + Date.now() + i, title: `Custom snippet ${i + 1}`, lang: state.level === 1 ? 'Python' : 'C++', code: p })); state.snippets = parts.concat(state.snippets); saveSnippetsToStorage(); renderSnipList(); alert('Saved ' + parts.length + ' snippet(s)'); });
+    document.getElementById('loadDefaults').addEventListener('click', () => { if (state.level === 1) { state.snippets = JSON.parse(JSON.stringify(pythonSnippets)); } else { state.snippets = JSON.parse(JSON.stringify(cppSnippets)); } saveSnippetsToStorage(); renderSnipList(); alert('Loaded provided snippets for current level'); });
+    document.getElementById('clearStorage').addEventListener('click', () => { if (!confirm('Clear saved snippets and scores?')) return; localStorage.removeItem('ctt_snippets_python'); localStorage.removeItem('ctt_snippets_cpp'); localStorage.removeItem('ctt_scores'); localStorage.removeItem('ctt_level'); state.level = 1; state.snippets = JSON.parse(JSON.stringify(pythonSnippets)); state.scores = []; renderSnipList(); renderScores(); alert('Cleared'); });
+
+    document.getElementById('addProvided').addEventListener('click', () => { const providedForLevel = state.level === 1 ? pythonSnippets : cppSnippets; const map = new Map(state.snippets.map(s => [s.id, s])); providedForLevel.forEach(p => { if (!map.has(p.id)) map.set(p.id, p); }); state.snippets = Array.from(map.values()); saveSnippetsToStorage(); renderSnipList(); alert('Added provided snippets for current level'); });
+
+    function saveSnippetsToStorage() {
+      if (state.level === 1) {
+        localStorage.setItem('ctt_snippets_python', JSON.stringify(state.snippets));
+      } else {
+        localStorage.setItem('ctt_snippets_cpp', JSON.stringify(state.snippets));
+      }
+    }
+
+    function renderScores() { scoresEl.innerHTML = ''; const arr = [...state.scores].sort((a, b) => b.wpm - a.wpm).slice(0, 30); if (arr.length === 0) scoresEl.innerHTML = '<div class="meta">No scores yet — take a test!</div>'; arr.forEach(sc => { const el = document.createElement('div'); el.style.padding = '8px'; el.style.borderBottom = '1px solid rgba(255,255,255,.02)'; el.innerHTML = `<div style="display:flex;justify-content:space-between"><div>${new Date(sc.date).toLocaleString()}</div><div>${sc.wpm} WPM • ${sc.acc}% • ${sc.snippet}</div></div>`; scoresEl.appendChild(el); }); }
+
+    // init
+    (function init() { 
+      if (!localStorage.getItem('ctt_snippets_python')) localStorage.setItem('ctt_snippets_python', JSON.stringify(pythonSnippets)); 
+      if (!localStorage.getItem('ctt_snippets_cpp')) localStorage.setItem('ctt_snippets_cpp', JSON.stringify(cppSnippets)); 
+      loadSnippetsForLevel(); 
+      renderScores(); 
+      if (state.snippets.length > 0) loadSnippet(state.snippets[0]); 
+      updateStats(); 
+    })();
+  </script>
+</body>
+</html>
